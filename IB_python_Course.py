@@ -161,6 +161,30 @@ if prodrate_x != 0 or prodrate_y != 0:
 else:
 	st.warning("Enter the Profit and Constraints Values above or Select the Demo button to run pre-fixed numbers")
 st.divider()
+#creating a Profit Prognosis Chart and then plot
+st.subheader("Profit Prognosis Plot")
+st.markdown("**Profit Generation according to variation in production at different amount of devices**")
+chart_y = list(np.linspace(0,Amount_y,5, dtype=int)) #taking equally spaced values from 0 up to the maximum value
+
+#using function to prevent an over spill of values past the limit
+def get_x(y):
+    if prodrate_x *(time_lim - y//prodrate_y) > Amount_x:
+        return Amount_x
+    else:
+        return prodrate_x *(time_lim - y//prodrate_y)
+    
+chart_x = [get_x(j) for j in chart_y]
+chart_profit = [round(profit_x*chart_x[l] + profit_y*chart_y[l], 2) for l in range(len(chart_x))]
+#adding optimised points in the graph
+chart_x.append(round(production.x[0]))
+chart_y.append(round(production.x[1]))
+chart_profit.append(abs(round(production.fun,2)))
+chart_dict = {'Type X': chart_x, 'Type Y': chart_y, 'Profit': chart_profit}
+df = pd.DataFrame(chart_dict)
+df2 = df.sort_values(by=['Type Y','Type X'])
+st.dataframe(df2.style.highlight_max('Profit',color = 'lightgreen', axis = 0))
+
+st.divider()
 
 if st.button("Run Scenario Simulations"):
 	if scen1:
