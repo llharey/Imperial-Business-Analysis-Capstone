@@ -10,6 +10,21 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 st.title("Imperial Business Analysis - Capstone Project")
 st.divider()
 
+feasibilitycolor = st.sidebar.color_picker("Choose a color for your feasibility region", '#282828')
+optimalmarkercolor = st.sidebar.color_picker("Choose a color for marking Optimal Point", '#229954')
+st.sidebar.markdown("\n **Choose Scenarios Simulation**")
+scen1 = st.sidebar.checkbox(" Focus Production more on a Particular Device")
+if scen1:
+	choicescen1 = st.sidebar.radio("Choose Superior Device",["Type X", "Type Y"], horizontal= True)
+	diffechoice = st.sidebar.radio("Choose between Minimum or Maximum Difference",["Minimum difference", "Maximum difference"], horizontal= True)
+	proddiff = st.sidebar.number_input("What should be the {0} between Products".format(diffechoice), value=None, placeholder="Type a number...")
+	st.sidebar.divider()
+
+scen2 = st.sidebar.checkbox(" Produce Just one type of Device(Either X or Y)")
+if scen2:
+	choicescen2 = st.sidebar.radio("Choose Only Device to Produce",["Type x", "Type y"], horizontal= True)
+
+
 profit_x = 0
 profit_y = 0
 prodrate_x = 0
@@ -67,27 +82,7 @@ st.divider()
 type_x = np.linspace(0, Amount_x, 1000) # generate 1000 equaly spaced values between 0 and 6000 
 type_y = np.linspace(0, Amount_y, 1000 ) # generate 1000 equaly spaced values between 0 and 4000
 
-# determine the plot size
-fig = plt.figure()
-plt.figure(figsize= (15, 10))
-# Plot the constraint equation
-plt.plot(type_x, prodrate_y*(time_lim - type_x/prodrate_x), label="x/{0} + y/{1} = {2} ---> C1".format(prodrate_x, prodrate_y, time_lim))
-# Plot the constraint lines
-plt.axvline(x=Amount_x, color='k', linestyle='--', label="x = {0}".format(Amount_x))
-plt.axhline(y=Amount_y, color='brown', linestyle='--', label="y = {0}".format(Amount_y))
-# # limits
-plt.ylim(0)
-plt.xlim(0)
-plt.title('Graph of Production Limit/Constraints')
-plt.xlabel('Type X', fontsize = 20)
-plt.ylabel('Type Y', fontsize = 20)
-# # legend
-plt.legend(bbox_to_anchor=(1, 1), loc=1, borderaxespad=0.)
 
-st.subheader("Production Limit and Constraints Graph")
-st.pyplot()
-
-st.divider()
 
 fig2 = plt.figure()
 plt.figure(figsize= (15, 10))
@@ -107,7 +102,7 @@ plt.ylabel('Type Y', fontsize = 20)
 plt.fill_between(type_x, # regular item 1 
                   np.minimum(prodrate_y*(time_lim - type_x/prodrate_x), Amount_y), # choose the minimum between x2 from two eqns
                  where = type_x >= 0, # defines any condition that might need to considered
-                 color ='blue', # shaded region
+                 color =feasibilitycolor, # shaded region
                  alpha = 0.50) # transparency level
 # # legend
 plt.legend(bbox_to_anchor=(1, 1), loc=1, borderaxespad=0.)
@@ -140,7 +135,7 @@ if prodrate_x != 0 or prodrate_y != 0:
 	plt.figure(figsize= (15, 10))
 	# Plot the constraint equation
 	plt.plot(type_x, prodrate_y*(time_lim - type_x/prodrate_x), label="x/{0} + y/{1} = {2} ---> C1".format(prodrate_x, prodrate_y, time_lim))
-	plt.plot(production.x[0], production.x[1], marker="o", markersize=20, markeredgecolor="red", markerfacecolor="red")
+	plt.plot(production.x[0], production.x[1], marker="o", markersize=20, markeredgecolor=optimalmarkercolor, markerfacecolor=optimalmarkercolor)
 	plt.text(production.x[0], production.x[1], f'Optimal x={round(production.x[0])}\nOptimal y={round(production.x[1])}\nProfit={abs(round(production.fun, ndigits=2))}', fontsize=12, ha='left')
 	# Plot the constraint lines
 	plt.axvline(x=Amount_x, color='k', linestyle='--', label="x = {0}".format(Amount_x))
@@ -156,13 +151,59 @@ if prodrate_x != 0 or prodrate_y != 0:
 	plt.fill_between(type_x, # regular item 1 
 	                  np.minimum(prodrate_y*(time_lim - type_x/prodrate_x), Amount_y), # choose the minimum between x2 from two eqns
 	                 where = type_x >= 0, # defines any condition that might need to considered
-	                 color ='blue', # shaded region
+	                 color =feasibilitycolor, # shaded region
 	                 alpha = 0.50) # transparency level
 	# # legend
 	plt.legend(bbox_to_anchor=(1, 1), loc=1, borderaxespad=0.)
 
-	st.subheader("Optimal Points on Production Graph")
+	st.subheader("Marking out the Feasible Region on Production Graph")
 	st.pyplot()
 else:
 	st.warning("Enter the Profit and Constraints Values above or Select the Demo button to run pre-fixed numbers")
 st.divider()
+
+if st.button("Run Scenario Simulations"):
+	if scen1:
+		if proddiff is not None:
+			if choicescen1 == "Type X":
+				variablechanger = [-1, 1]
+			elif choicescen1 == "Type Y":
+				variablechanger = [1,-1]
+			if diffechoice == "Maximum difference":
+				variablechanger = [i * -1 for i in variablechanger]
+				proddiff = -1* proddiff
+
+			limitationsscen1 = np.array([[1/prodrate_x, 1/prodrate_y], # first row comes from constriants 1
+	                     [1, 0], [0, 1], variablechanger])  # second row comes from constraints 2
+			constraintsscen1 = np.array([time_lim, Amount_x, Amount_y, proddiff] )
+			productionscen1 = linprog(-profit, A_ub = limitationsscen1, b_ub = constraintsscen1, method='revised simplex')
+
+			st.subheader("Scenario 1")
+			st.markdown("**Based on scenario selected and a {0} in product of {1};**".format(diffechoice, abs(proddiff)))
+			st.write('Profit:', abs(round(productionscen1.fun, ndigits=2)))
+			if abs(round(productionscen1.fun, ndigits=2)) < abs(round(production.fun, ndigits=2)):
+				st.write("This simulation gives a profit les than the optimal profit")
+			st.write('Amount of Type X:', round(productionscen1.x[0]))
+			st.write('Amount of Type Y:', round(productionscen1.x[1]))
+			st.write('Status:', productionscen1.message)
+		else:
+			st.error("Enter a value for the product difference in the first Scenario by the sidebar")
+	st.divider()
+	if scen2:
+		if choicescen2 == "Type x":
+			constraintsscen2 = np.array([time_lim, Amount_x, 0] )
+		elif choicescen2 == "Type y":
+			constraintsscen2 = np.array([time_lim, 0, Amount_y] )
+
+		limitationsscen2 = np.array([[1/prodrate_x, 1/prodrate_y], # first row comes from constriants 1
+	                     [1, 0], [0, 1]])  # second row comes from constraints 2
+		productionscen2 = linprog(-profit, A_ub = limitationsscen2, b_ub = constraintsscen2, method='revised simplex')
+
+		st.subheader("Scenario 2")
+		st.markdown("**If we focus on producing just Device {0};**".format(choicescen2))
+		st.write('Profit:', abs(round(productionscen2.fun, ndigits=2)))
+		if abs(round(productionscen2.fun, ndigits=2)) < abs(round(production.fun, ndigits=2)):
+			st.write("This simulation gives a profit les than the optimal profit")
+		st.write('Amount of Type X:', round(productionscen2.x[0]))
+		st.write('Amount of Type Y:', round(productionscen2.x[1]))
+		st.write('Status:', productionscen2.message)
