@@ -161,7 +161,7 @@ if prodrate_x != 0 or prodrate_y != 0:
 	# # legend
 	plt.legend(bbox_to_anchor=(1, 1), loc=1, borderaxespad=0.)
 
-	st.subheader("Marking out the Feasible Region on Production Graph")
+	st.subheader("Optimal Points on Production Graph")
 	st.pyplot()
 else:
 	st.warning("Enter the Profit and Constraints Values above or Select the Demo button to run pre-fixed numbers")
